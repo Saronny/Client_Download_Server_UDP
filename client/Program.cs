@@ -7,6 +7,8 @@ using UDP_FTP.Models;
 using UDP_FTP.Error_Handling;
 using static UDP_FTP.Models.Enums;
 
+
+//Test
 namespace Client
 {
     class Program
@@ -28,6 +30,8 @@ namespace Client
             string serverIp = "127.0.0.1";
             IPEndPoint serverEndpoint = new IPEndPoint(IPAddress.Parse(serverIp), 5004);
 
+            sock = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+
             HelloMSG h = new HelloMSG();
             RequestMSG r = new RequestMSG();
             DataMSG D = new DataMSG();
@@ -38,7 +42,6 @@ namespace Client
             {
                 Console.WriteLine("Client started");
                 // TODO: Instantiate and initialize your socket 
-                sock = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
                 sock.Connect(serverEndpoint);
 
                 // TODO: Send hello mesg
