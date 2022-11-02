@@ -15,7 +15,7 @@ namespace UDP_FTP
             // string format example: "Jan Jansen 09123456" 
             // If a group has only one member fill in an empty string for the second student
             string student_1 = "Timo van der Ven 1024454";
-            string student_2 = "Mike Dudok "; // MISSING: Studentnummer
+            string student_2 = "Mike Dudok 1026366"; // MISSING: Studentnummer
 
             
 
