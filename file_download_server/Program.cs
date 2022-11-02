@@ -15,15 +15,13 @@ namespace UDP_FTP
             // string format example: "Jan Jansen 09123456" 
             // If a group has only one member fill in an empty string for the second student
             string student_1 = "Timo van der Ven 1024454";
-            string student_2 = "Mike Dudok 1026366"; // MISSING: Studentnummer
-
-            
+            string student_2 = "Mike Dudok 1026366"; 
 
             Console.WriteLine("Server is waiting for new request!");
             Communicate FileShare = new Communicate();
-            Console.WriteLine("The file download request terminated with code {0}.", FileShare.StartDownload());
+            Console.WriteLine("\nThe file download request terminated with code {0}.", FileShare.StartDownload());
 
-            Console.WriteLine("Group members: {0} | {1}", student_1, student_2);
+            // Console.WriteLine("Group members: {0} | {1}", student_1, student_2);
         }
     }
 }

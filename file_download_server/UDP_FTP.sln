@@ -5,7 +5,7 @@ VisualStudioVersion = 17.3.32929.385
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UDP_FTP", "UDP_FTP.csproj", "{70CEBA87-F720-4056-B676-F8B54E91F249}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Client", "..\client\Client.csproj", "{1730AD1E-0251-4430-AC7C-8B7FFDFB8341}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Client", "..\client\Client.csproj", "{FED59226-3838-4F6F-AB36-617F8331259F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,10 +17,10 @@ Global
 		{70CEBA87-F720-4056-B676-F8B54E91F249}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{70CEBA87-F720-4056-B676-F8B54E91F249}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{70CEBA87-F720-4056-B676-F8B54E91F249}.Release|Any CPU.Build.0 = Release|Any CPU
-		{1730AD1E-0251-4430-AC7C-8B7FFDFB8341}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{1730AD1E-0251-4430-AC7C-8B7FFDFB8341}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{1730AD1E-0251-4430-AC7C-8B7FFDFB8341}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{1730AD1E-0251-4430-AC7C-8B7FFDFB8341}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FED59226-3838-4F6F-AB36-617F8331259F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FED59226-3838-4F6F-AB36-617F8331259F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FED59226-3838-4F6F-AB36-617F8331259F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FED59226-3838-4F6F-AB36-617F8331259F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
