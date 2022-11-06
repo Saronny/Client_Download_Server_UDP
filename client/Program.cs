@@ -6,6 +6,8 @@ using System.Text;
 using System.Text.Json;
 using UDP_FTP.Models;
 using static UDP_FTP.Error_Handling.ErrorHandler;
+using System.Collections.Generic;
+using System.Linq;
 using static UDP_FTP.Models.Enums;
 
 namespace Client
@@ -92,38 +94,32 @@ namespace Client
 
                 // TODO: Check if there are more DataMSG messages to be received 
                 // receive the message and verify if there are no errors
-                bool Transferring = true;;
+                bool Transferring = true;
+                var dataMessages = new List<DataMSG>();
 
                 while(Transferring) {
                     b = sock.ReceiveFrom(buffer, ref remoteEP);
                     D = JsonSerializer.Deserialize<DataMSG>(data);
-                    C = new ConSettings() { ConID = r.ConID, From = "Server", To = "Client", Type = Messages.DATA };  
-                    if (VerifyData(D, C) == ErrorType.NOERROR)
-                    {
-                        Console.WriteLine("Data message received");
-                        ack = new AckMSG() { Type = Messages.ACK, From = "Client", To = "Server", ConID = D.ConID, Sequence = D.Sequence};
-                        msg = Encoding.ASCII.GetBytes(JsonSerializer.Serialize(ack));
-                        sock.SendTo(msg, remoteEP);
-                        Console.WriteLine("Ack sent");
-                    }
-                    else
-                    {
-                        Console.WriteLine("Data message not received");
-                    }
-
+                    dataMessages.Add(D);
+                    Console.WriteLine("Data message received");
+                        
                     if (D.More == false)
                     {
                         Transferring = false;
-                        for (int i = 0; i < D.Data.Length; i++)
-                        {
-                            File.AppendAllText(r.FileName, D.Data[i].ToString());
-                        }
                     }
                 }
 
 
 
                 // TODO: Send back AckMSG for each received DataMSG 
+
+                foreach (DataMSG d in dataMessages)
+                {
+                    ack = new AckMSG() { Type = Messages.ACK, From = "Client", To = "Server", ConID = d.ConID, Sequence = d.Sequence };
+                    msg = Encoding.ASCII.GetBytes(JsonSerializer.Serialize(ack));
+                    sock.SendTo(msg, remoteEP);
+                    Console.WriteLine("Ack message sent");
+                }
 
 
                 // TODO: Receive close message
