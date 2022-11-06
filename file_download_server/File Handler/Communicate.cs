@@ -184,76 +184,83 @@ namespace UDP_FTP.File_Handler
             bool Transmission = true;
             while (Transmission)
             {
-                
-                //Sending a full window of data
-                if (nextseqnum < send_base + N)
-                {
-                    //setting the data message
-                    data = new DataMSG() { };
-                    data.Type = Messages.DATA;
-                    data.ConID = SessionID;
-                    data.To = "Client";
-                    data.From = "Server";
-                    data.Sequence = segments_sent++;
-                    if (segments_sent == total_segments)
-                    {
-                        data.More = false;
-                        data.Size = last_segment;
-                        data_buffer = new byte[last_segment];
-                    }
-                    else
-                    {
-                        data.More = true;
-                        data.Size = S;
-                    }
-                    for(int i = 0; i < data.Size; i++) {
-                        data_buffer[i] = file[i + (nextseqnum * S)];
-                    }
-                    data.Data = data_buffer;
-                }
-                //sending the data message
-                msg = JsonSerializer.Serialize(data);
-                socket.SendTo(Encoding.ASCII.GetBytes(msg), remoteEP);
-                nextseqnum++;
-
-            }
-            // TODO: Receive and verify the acknowledgements (AckMSG) of sent messages
-            // Your client implementation should send an AckMSG message for each received DataMSG message  
-            for (int i = 0; i < N; i++)
-            {
                 try
                 {
-                    b = socket.ReceiveFrom(buffer, ref remoteEP);
-                    msg = Encoding.ASCII.GetString(buffer, 0, b);
-                    Console.WriteLine("Client said {0}", msg);
-                    ack = JsonSerializer.Deserialize<AckMSG>(msg);
-                    C = new ConSettings() { Type = Messages.ACK, To = "Server", From = "Client", ConID = SessionID };
-                    if (VerifyAck(ack, C) == ErrorType.NOERROR)
+                    //Sending a full window of data
+                    if (nextseqnum < send_base + N)
                     {
-                        Console.WriteLine("Ack message received");
-                        Status = ErrorType.NOERROR;
+                        segments_sent++;
+                        //setting the data message
+                        data = new DataMSG() { };
+                        data.Type = Messages.DATA;
+                        data.ConID = SessionID;
+                        data.To = "Client";
+                        data.From = "Server";
+                        data.Sequence = segments_sent;
+                        if (segments_sent == total_segments)
+                        {
+                            data.More = false;
+                            data.Size = last_segment;
+                            for (int i = 0; i < last_segment; i++)
+                            {
+                                data_buffer[i] = file[nextseqnum * S + i];
+                            }
+                        }
+                        else
+                        {
+                            data.More = true;
+                            data.Size = S;
+                            for (int i = 0; i < S; i++)
+                            {
+                                data_buffer[i] = file[nextseqnum * S + i];
+                            }
+                        }
+                        
+                        data.Data = data_buffer;
                     }
-                    else
+                    //sending the data message
+                    msg = JsonSerializer.Serialize(data);
+                    socket.SendTo(Encoding.ASCII.GetBytes(msg), remoteEP);
+                    nextseqnum++;
+
+                    //waiting for the acks
+                    // TODO: Receive and verify the acknowledgements (AckMSG) of sent messages
+                    // Your client implementation should send an AckMSG message for each received DataMSG message  
+
+                    if (nextseqnum == send_base + N)
                     {
-                        Console.WriteLine("Error in Ack Message");
-                        Status = ErrorType.BADREQUEST;
+                        b = socket.ReceiveFrom(buffer, ref remoteEP);
+                        msg = Encoding.ASCII.GetString(buffer, 0, b);
+                        Console.WriteLine("Client said {0}", msg);
+                        ack = JsonSerializer.Deserialize<AckMSG>(msg);
+                        C = new ConSettings() { Type = Messages.ACK, To = "Server", From = "Client", ConID = SessionID, Sequence = ack.Sequence };
+                        if (VerifyAck(ack, C) == ErrorType.NOERROR)
+                        {
+                            send_base = ack.Sequence + 1;
+                            nextseqnum = send_base;
+                            Console.WriteLine("Ack message received, {0}", ack.Sequence);
+                            Status = ErrorType.NOERROR;
+                        }
+                        else
+                        {
+                            Console.WriteLine("Error in Ack Message");
+                            Status = ErrorType.BADREQUEST;
+                        }
                     }
-                    if (Status == ErrorType.NOERROR)
+
+                    if (segments_sent == total_segments)
                     {
-                        send_base = ack.Sequence + 1;
-                    }
-                    else
-                    {
-                        Console.WriteLine("Error in Ack Message");
+                        Transmission = false;
                     }
                 }
                 catch (SocketException e)
                 {
-                    Console.WriteLine("Timeout");
-
+                    Console.WriteLine("SocketException: {0}", e);
+                    nextseqnum = send_base;
                 }
+
+
             }
-        
 
 
 
@@ -264,14 +271,23 @@ namespace UDP_FTP.File_Handler
 
 
 
-        // TODO: Print each confirmed sequence in the console
-        // receive the message and verify if there are no errors
+
+            // TODO: Print each confirmed sequence in the console
+            // receive the message and verify if there are no errors
+            if (Status == ErrorType.NOERROR)
+            {
+                Console.WriteLine("File sent");
+            }
+            else
+            {
+                Console.WriteLine("Error in File Transmission");
+            }
 
 
-        // TODO: Send a CloseMSG message to the client for the current session
-        // Send close connection request
-        cls = new CloseMSG() { Type = Messages.CLOSE_REQUEST, From = "Server", To = "Client", ConID = SessionID };
-        msg = JsonSerializer.Serialize(cls);
+            // TODO: Send a CloseMSG message to the client for the current session
+            // Send close connection request
+            cls = new CloseMSG() { Type = Messages.CLOSE_REQUEST, From = "Server", To = "Client", ConID = SessionID };
+            msg = JsonSerializer.Serialize(cls);
             socket.SendTo(Encoding.ASCII.GetBytes(msg), remoteEP);
 
             // TODO: Receive and verify a CloseMSG message confirmation for the current session
@@ -292,12 +308,13 @@ namespace UDP_FTP.File_Handler
                 Status = ErrorType.BADREQUEST;
             }
 
-string student_1 = "Mike Dudok 1026366";
-string student_2 = "Timo van der Ven 1024454";
-Console.WriteLine("Group members: {0} | {1}", student_1, student_2);
-return ErrorType.NOERROR;
+            string student_1 = "Mike Dudok 1026366";
+            string student_2 = "Timo van der Ven 1024454";
+            Console.WriteLine("Group members: {0} | {1}", student_1, student_2);
+            return ErrorType.NOERROR;
         }
     }
 }
+
 
 

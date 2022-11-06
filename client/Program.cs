@@ -99,27 +99,24 @@ namespace Client
 
                 while(Transferring) {
                     b = sock.ReceiveFrom(buffer, ref remoteEP);
+                    data = Encoding.ASCII.GetString(buffer, 0, b);
                     D = JsonSerializer.Deserialize<DataMSG>(data);
                     dataMessages.Add(D);
                     Console.WriteLine("Data message received");
+                    Console.WriteLine("Data message sequence number: " + D.Sequence);
                         
                     if (D.More == false)
                     {
                         Transferring = false;
                     }
-                }
 
 
 
                 // TODO: Send back AckMSG for each received DataMSG 
-
-                foreach (DataMSG d in dataMessages)
-                {
-                    ack = new AckMSG() { Type = Messages.ACK, From = "Client", To = "Server", ConID = d.ConID, Sequence = d.Sequence };
-                    msg = Encoding.ASCII.GetBytes(JsonSerializer.Serialize(ack));
-                    sock.SendTo(msg, remoteEP);
-                    Console.WriteLine("Ack message sent");
-                }
+                // send the message and verify if there are no errors
+                ack = new AckMSG() { Type = Messages.ACK, From = "Client", To = "Server", ConID = D.ConID, Sequence = D.Sequence };
+                msg = Encoding.ASCII.GetBytes(JsonSerializer.Serialize(ack));
+                sock.SendTo(msg, remoteEP);
 
 
                 // TODO: Receive close message
@@ -136,12 +133,16 @@ namespace Client
                     msg = Encoding.ASCII.GetBytes(JsonSerializer.Serialize(cls));
                     sock.SendTo(msg, remoteEP);
                     Console.WriteLine("Close sent");
+
+                    File.WriteAllBytes("test.txt", dataMessages.SelectMany(x => x.Data).ToArray());
+
                 }
                 else
                 {
                     Console.WriteLine("Close message not received");
                 }   
 
+                }
             }
             catch
             {
