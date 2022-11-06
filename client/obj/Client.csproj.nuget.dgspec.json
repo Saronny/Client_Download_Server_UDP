@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\miked\\Analysis 5 - Assignment\\Analysis_5\\Client\\Client.csproj": {}
+    "C:\\Users\\miked\\Analysis 5 - Assignment\\Analysis_5\\client\\Client.csproj": {}
   },
   "projects": {
-    "C:\\Users\\miked\\Analysis 5 - Assignment\\Analysis_5\\Client\\Client.csproj": {
+    "C:\\Users\\miked\\Analysis 5 - Assignment\\Analysis_5\\client\\Client.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\miked\\Analysis 5 - Assignment\\Analysis_5\\Client\\Client.csproj",
+        "projectUniqueName": "C:\\Users\\miked\\Analysis 5 - Assignment\\Analysis_5\\client\\Client.csproj",
         "projectName": "Client",
-        "projectPath": "C:\\Users\\miked\\Analysis 5 - Assignment\\Analysis_5\\Client\\Client.csproj",
+        "projectPath": "C:\\Users\\miked\\Analysis 5 - Assignment\\Analysis_5\\client\\Client.csproj",
         "packagesPath": "C:\\Users\\miked\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\miked\\Analysis 5 - Assignment\\Analysis_5\\Client\\obj\\",
+        "outputPath": "C:\\Users\\miked\\Analysis 5 - Assignment\\Analysis_5\\client\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\miked\\AppData\\Roaming\\NuGet\\NuGet.Config",

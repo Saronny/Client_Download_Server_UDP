@@ -16,7 +16,7 @@ namespace UDP_FTP.File_Handler
     {
 
         private const string Server = "MyServer";
-        private string Client;
+        private const string Client = "MyClient";
         private int SessionID;
         private Socket socket;
         private IPEndPoint remoteEndpoint;
@@ -65,10 +65,10 @@ namespace UDP_FTP.File_Handler
             // required messages are: HelloMSG, RequestMSG, DataMSG, AckMSG, CloseMSG
             // Set attribute values for each class accordingly 
 
-            HelloMSG Greetback = new HelloMSG() { Type = Messages.HELLO_REPLY, From = "Server", To = "Client", ConID = SessionID }; // Server  -> Client
-            HelloMSG Greet = new HelloMSG() { Type = Messages.HELLO, From = "Client", To = "Server", ConID = SessionID }; // Client -> Server
-            RequestMSG req = new RequestMSG() { Type = Messages.REQUEST, From = "Client", To = "Server", ConID = SessionID, FileName = "test.txt", Status = ErrorType.NOERROR }; // Client -> Server
-            RequestMSG req2 = new RequestMSG() { Type = Messages.REPLY, From = "Server", To = "Client", ConID = SessionID, FileName = "test.txt", Status = ErrorType.NOERROR }; // Server -> Client
+            HelloMSG Greetback = new HelloMSG() { Type = Messages.HELLO_REPLY, From = Server, To = Client, ConID = SessionID }; // Server  -> Client
+            HelloMSG Greet = new HelloMSG() { Type = Messages.HELLO, From = Client, To = Server, ConID = SessionID }; // Client -> Server
+            RequestMSG req = new RequestMSG() { Type = Messages.REQUEST, From = Client, To = Server, ConID = SessionID, FileName = "test.txt", Status = ErrorType.NOERROR }; // Client -> Server
+            RequestMSG req2 = new RequestMSG() { Type = Messages.REPLY, From = Server, To = Client, ConID = SessionID, FileName = "test.txt", Status = ErrorType.NOERROR }; // Server -> Client
             DataMSG data = new DataMSG();
             AckMSG ack = new AckMSG();
             CloseMSG cls = new CloseMSG();
@@ -83,7 +83,7 @@ namespace UDP_FTP.File_Handler
             string msg = Encoding.ASCII.GetString(buffer, 0, b);
             Console.WriteLine("Client said {0}", msg);
             Greet = JsonSerializer.Deserialize<HelloMSG>(msg);
-            C = new ConSettings() { To = "Server", Type = Messages.HELLO };
+            C = new ConSettings() { To = Server, Type = Messages.HELLO };
             if (VerifyGreeting(Greet, C) == ErrorType.NOERROR)
             {
                 Console.WriteLine("Hello message received");
@@ -112,7 +112,7 @@ namespace UDP_FTP.File_Handler
             msg = Encoding.ASCII.GetString(buffer, 0, b);
             Console.WriteLine("Client said {0}", msg);
             req = JsonSerializer.Deserialize<RequestMSG>(msg);
-            C = new ConSettings() { Type = Messages.REQUEST, To = "Server", From = "Client", ConID = SessionID };
+            C = new ConSettings() { Type = Messages.REQUEST, To = Server, From = Client, ConID = SessionID };
             if (VerifyRequest(req, C) == ErrorType.NOERROR)
             {
                 Console.WriteLine("Request message received");
@@ -194,8 +194,8 @@ namespace UDP_FTP.File_Handler
                         data = new DataMSG() { };
                         data.Type = Messages.DATA;
                         data.ConID = SessionID;
-                        data.To = "Client";
-                        data.From = "Server";
+                        data.To = Client;
+                        data.From = Server;
                         data.Sequence = segments_sent;
                         if (segments_sent == total_segments)
                         {
@@ -233,7 +233,7 @@ namespace UDP_FTP.File_Handler
                         msg = Encoding.ASCII.GetString(buffer, 0, b);
                         Console.WriteLine("Client said {0}", msg);
                         ack = JsonSerializer.Deserialize<AckMSG>(msg);
-                        C = new ConSettings() { Type = Messages.ACK, To = "Server", From = "Client", ConID = SessionID, Sequence = ack.Sequence };
+                        C = new ConSettings() { Type = Messages.ACK, To = Server, From = Client, ConID = SessionID, Sequence = ack.Sequence };
                         if (VerifyAck(ack, C) == ErrorType.NOERROR)
                         {
                             send_base = ack.Sequence + 1;
@@ -286,7 +286,7 @@ namespace UDP_FTP.File_Handler
 
             // TODO: Send a CloseMSG message to the client for the current session
             // Send close connection request
-            cls = new CloseMSG() { Type = Messages.CLOSE_REQUEST, From = "Server", To = "Client", ConID = SessionID };
+            cls = new CloseMSG() { Type = Messages.CLOSE_REQUEST, From = Server, To = Client, ConID = SessionID };
             msg = JsonSerializer.Serialize(cls);
             socket.SendTo(Encoding.ASCII.GetBytes(msg), remoteEP);
 
@@ -296,7 +296,7 @@ namespace UDP_FTP.File_Handler
             b = socket.ReceiveFrom(buffer, ref remoteEP);
             msg = Encoding.ASCII.GetString(buffer, 0, b);
             cls = JsonSerializer.Deserialize<CloseMSG>(msg);
-            C = new ConSettings() { Type = Messages.CLOSE_CONFIRM, To = "Server", From = "Client", ConID = SessionID };
+            C = new ConSettings() { Type = Messages.CLOSE_CONFIRM, To = Server, From = Client, ConID = SessionID };
             if (VerifyClose(cls, C) == ErrorType.NOERROR)
             {
                 Console.WriteLine("Close message received");

@@ -27,6 +27,10 @@ namespace Client
 
             const int client_port = 5004;
             const int server_port = 5010;
+
+            const string server = "MyServer";
+            const string client = "Client";
+
             IPAddress server_ip = IPAddress.Parse("127.0.0.1");
             IPEndPoint server_endpoint = new IPEndPoint(server_ip, client_port);
             IPEndPoint client_endpoint = new IPEndPoint(IPAddress.Any, 0);
@@ -36,8 +40,8 @@ namespace Client
 
             
 
-            HelloMSG h = new HelloMSG() { Type = Messages.HELLO, From = "Client", To = "Server", ConID = 0 }; //Client to Server
-            RequestMSG r = new RequestMSG() { Type = Messages.REQUEST, From = "Client", To = "Server", ConID = 0, FileName = "test.txt" }; //Client to Server
+            HelloMSG h = new HelloMSG() { Type = Messages.HELLO, From = server, To = client, ConID = 1 }; //Client to Server
+            RequestMSG r = new RequestMSG() { Type = Messages.REQUEST, From = client, To = server, ConID = 0, FileName = "test.txt" }; //Client to Server
             DataMSG D = new DataMSG();
             AckMSG ack = new AckMSG();
             CloseMSG cls = new CloseMSG();
@@ -50,7 +54,7 @@ namespace Client
 
                 // TODO: Send hello message to the server
                 msg = Encoding.ASCII.GetBytes(JsonSerializer.Serialize(h));
-                sock.SendTo(msg, remoteEP);
+                sock.SendTo(msg, msg.Length, SocketFlags.None, remoteEP);
                 Console.WriteLine("Sent Hello Message");
                 
 
@@ -58,11 +62,11 @@ namespace Client
                 int b = sock.ReceiveFrom(buffer, ref remoteEP);
                 string data = Encoding.ASCII.GetString(buffer, 0, b);
                 HelloMSG h2 = JsonSerializer.Deserialize<HelloMSG>(data);
-                C = new ConSettings() { To = "Client" };     
+                C = new ConSettings() { To = client };     
                 if (VerifyGreetingReply(h2, C) == ErrorType.NOERROR)
                 {
                     Console.WriteLine("Hello message received");
-                    r = new RequestMSG() { Type = Messages.REQUEST, From = "Client", To = "Server", ConID = h2.ConID, FileName = "test.txt", Status = ErrorType.NOERROR };
+                    r = new RequestMSG() { Type = Messages.REQUEST, From = client, To = server, ConID = h2.ConID, FileName = "test.txt", Status = ErrorType.NOERROR };
                 }
                 else
                 {
@@ -80,7 +84,7 @@ namespace Client
                 b = sock.ReceiveFrom(buffer, ref remoteEP);
                 data = Encoding.ASCII.GetString(buffer, 0, b);
                 RequestMSG r2 = JsonSerializer.Deserialize<RequestMSG>(data);
-                C = new ConSettings() { ConID = r.ConID, From = "Server", To = "Client" };
+                C = new ConSettings() { ConID = r.ConID, From = server, To = client };
                 if (VerifyRequestReply(r2, C) == ErrorType.NOERROR)
                 {
                     Console.WriteLine("Request reply message received");
@@ -108,13 +112,14 @@ namespace Client
                     if (D.More == false)
                     {
                         Transferring = false;
+                        File.WriteAllBytes(r.FileName, dataMessages.SelectMany(x => x.Data).ToArray());
                     }
 
 
 
                 // TODO: Send back AckMSG for each received DataMSG 
                 // send the message and verify if there are no errors
-                ack = new AckMSG() { Type = Messages.ACK, From = "Client", To = "Server", ConID = D.ConID, Sequence = D.Sequence };
+                ack = new AckMSG() { Type = Messages.ACK, From = client, To = server, ConID = D.ConID, Sequence = D.Sequence };
                 msg = Encoding.ASCII.GetBytes(JsonSerializer.Serialize(ack));
                 sock.SendTo(msg, remoteEP);
 
@@ -125,16 +130,14 @@ namespace Client
                 data = Encoding.ASCII.GetString(buffer, 0, b);
                 cls = JsonSerializer.Deserialize<CloseMSG>(data);
                 // TODO: confirm close message
-                C = new ConSettings() { ConID = r.ConID, From = "Server", To = "Client", Type = Messages.CLOSE_REQUEST };
+                C = new ConSettings() { ConID = r.ConID, From = server, To = client, Type = Messages.CLOSE_REQUEST };
                 if (VerifyCloseRequest(cls, C) == ErrorType.NOERROR)
                 {
                     Console.WriteLine("Close message received");
-                    cls = new CloseMSG() { Type = Messages.CLOSE_CONFIRM, From = "Client", To = "Server", ConID = cls.ConID };
+                    cls = new CloseMSG() { Type = Messages.CLOSE_CONFIRM, From = client, To = server, ConID = cls.ConID };
                     msg = Encoding.ASCII.GetBytes(JsonSerializer.Serialize(cls));
                     sock.SendTo(msg, remoteEP);
                     Console.WriteLine("Close sent");
-
-                    File.WriteAllBytes("test.txt", dataMessages.SelectMany(x => x.Data).ToArray());
 
                 }
                 else

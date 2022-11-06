@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "kI4qdV1546W9W4/SMGD+D9hfj2fFnOnAeAhk80cOW1RXbk2yJvpo1Qu9FVmqaRnpPXEWsoLeGEjm3oPHV/p/2A==",
+  "dgSpecHash": "h6XAW6sB/UCZ+jtOk9HF38OLQ/8z4+0E8Z2qgVYVQHo+9895UhnHBYwr1BPff+Et0iniL+BmFZG6Idumyg/W3A==",
   "success": true,
-  "projectFilePath": "C:\\Users\\miked\\Analysis 5 - Assignment\\Analysis_5\\Client\\Client.csproj",
+  "projectFilePath": "C:\\Users\\miked\\Analysis 5 - Assignment\\Analysis_5\\client\\Client.csproj",
   "expectedPackageFiles": [],
   "logs": []
 }
