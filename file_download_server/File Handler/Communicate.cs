@@ -196,7 +196,7 @@ namespace UDP_FTP.File_Handler
                         response = Encoding.ASCII.GetString(buffer, 0, b);
                         AckMSG receivedAck = JsonSerializer.Deserialize<AckMSG>(response);
 
-                        Console.WriteLine($"Received ack Nr {receivedAck.Sequence}");
+                        Console.WriteLine($"Received ack Nr {receivedAck.Sequence} | {receivedAck.Data}");
                         ackMSGs.Add(receivedAck.Sequence);
 
                         C = new ConSettings() { Type = Messages.ACK, From = Client, To = Server, ConID = SessionID, Sequence = receivedAck.Sequence };
@@ -208,8 +208,8 @@ namespace UDP_FTP.File_Handler
                     }
                 } catch (SocketException e)
                 {
-                    Console.WriteLine("Timeout on ");
                     segmentNum = dataMSGs.Except(ackMSGs).ToList().Min(); // Get the lost ack
+                    Console.WriteLine($"Timeout on {segmentNum}");
                     windowsLeft++;
                 }
                 windowsLeft--;

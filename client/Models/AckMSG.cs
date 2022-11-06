@@ -14,6 +14,7 @@ namespace UDP_FTP.Models
         public string To { get; set; }
         public int ConID { get; set; }
         public int Sequence { get; set; }
+        public string Data { get; set; } // temporary
 
     }
 }

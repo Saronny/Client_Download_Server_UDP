@@ -113,10 +113,6 @@ namespace Client
                     b = sock.ReceiveFrom(buffer, buffer.Length, SocketFlags.None, ref serverEP);
                     response = Encoding.ASCII.GetString(buffer, 0, b);
                     DataMSG receivedData = JsonSerializer.Deserialize<DataMSG>(response);
-
-                    
-
-                    moreMessages = receivedData.More;
                     
                     ConSettings dataCon = new ConSettings() { ConID = sessionId, From = serverName, To = clientName, Type = Messages.DATA, Sequence = dataNumber };
 
@@ -129,15 +125,13 @@ namespace Client
                         Console.WriteLine($"Received message {receivedData.Sequence} correctly");
                     }
 
-
-
-                    dataNumber++;
+                    moreMessages = receivedData.More;
+                    dataNumber++; 
 
                     dataString += Encoding.ASCII.GetString(receivedData.Data);
                     Console.WriteLine($"{receivedData.Sequence} | {Encoding.ASCII.GetString(receivedData.Data)}");
 
-
-                    ack = new AckMSG() { ConID = sessionId, From = clientName, To = serverName, Type = Messages.ACK, Sequence = dataNumber };
+                    ack = new AckMSG() { ConID = sessionId, From = clientName, To = serverName, Type = Messages.ACK, Sequence = dataNumber, Data = Encoding.ASCII.GetString(receivedData.Data) };
                     msg = JsonSerializer.SerializeToUtf8Bytes(ack, typeof(AckMSG)); // Serialize and encode
                     sock.SendTo(msg, serverEndpoint); // Send
 
