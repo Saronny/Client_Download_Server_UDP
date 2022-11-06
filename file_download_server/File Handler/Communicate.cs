@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO.Enumeration;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -53,12 +54,31 @@ namespace UDP_FTP.File_Handler
             socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
 
             // create a local endpoint
-            IPEndPoint localEndpoint = new IPEndPoint(IPAddress.Any, 5004); // Of 127.0.0.1 ipv ipaddress.any
+            IPEndPoint localEndpoint = new IPEndPoint(IPAddress.Any, 5004); 
 
             // bind the socket to the local endpoint
             socket.Bind(localEndpoint);
 
             Console.WriteLine("Waiting for clients...");
+        }
+
+        private static byte[] getSpecificBytes(byte[] arr, int start, int end)
+        {
+            byte[] result = new byte[end - start];
+            try
+            {
+                for (int i = start; i < end; i++)
+                {
+                    result[i - start] = arr[i];
+                }
+            } catch (System.IndexOutOfRangeException e)
+            {
+                for (int i = start; i < arr.Length; i++)
+                {
+                    result[i - start] = arr[i];
+                }
+            }
+            return result;
         }
 
         public ErrorType StartDownload()
@@ -68,9 +88,9 @@ namespace UDP_FTP.File_Handler
             // Set attribute values for each class accordingly 
             HelloMSG GreetBack;
             RequestMSG req;
-            DataMSG data = new DataMSG();
-            AckMSG ack = new AckMSG();
-            CloseMSG cls = new CloseMSG();
+            DataMSG data;
+            AckMSG ack;
+            CloseMSG cls;
 
             // TODO: Start the communication by receiving a HelloMSG message... Done
             // Receive and deserialize HelloMSG message... Done
@@ -93,8 +113,8 @@ namespace UDP_FTP.File_Handler
             }
 
             // TODO: If no error is found then HelloMSG will be sent back
-            socket.Connect(remoteEndpoint);
-            GreetBack = new HelloMSG() { Type = Messages.HELLO, From = Server, To = Client, ConID = SessionID };
+            // socket.Connect(remoteEndpoint);
+            GreetBack = new HelloMSG() { Type = Messages.HELLO_REPLY, From = Server, To = Client, ConID = SessionID };
             msg = Encoding.ASCII.GetBytes(JsonSerializer.Serialize(GreetBack));
             socket.SendTo(msg, remoteEP);
 
@@ -119,17 +139,82 @@ namespace UDP_FTP.File_Handler
             }
 
             // TODO: Send a RequestMSG of type REPLY message to remoteEndpoint verifying the status
-            req = new RequestMSG() { Type = Messages.REQUEST, From = Server, To = Client, FileName = fileName, ConID = SessionID };
+            req = new RequestMSG() { Type = Messages.REPLY, From = Server, To = Client, FileName = fileName, ConID = SessionID };
             msg = Encoding.ASCII.GetBytes(JsonSerializer.Serialize(req));
             socket.SendTo(msg, remoteEP);
 
 
             // TODO:  Start sending file data by setting first the socket ReceiveTimeout value
-
-
+            socket.ReceiveTimeout = 1000;
 
             // TODO: Open and read the text-file first
             // Make sure to locate a path on windows and macos platforms
+
+            // hoe tf moeten we weten waar de file staat op macos
+            byte[] lines;
+            try
+            {
+                string path = "..\\..\\..\\" + fileName;
+                lines = System.IO.File.ReadAllBytes(path);
+                Console.WriteLine(lines);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("The file could not be read:");
+                Console.WriteLine(e.Message);
+                return ErrorType.BADREQUEST;
+            }
+            int segmentNum = 1;
+            int segmentAmount = lines.Length / (int)Params.SEGMENT_SIZE;
+            segmentAmount += lines.Length % (int)Params.SEGMENT_SIZE != 0 ? 1 : 0;
+            int windowsLeft = segmentAmount / (int)Params.WINDOW_SIZE;
+            List<int> dataMSGs = new List<int>(); // a list of the sent data messages
+            List<int> ackMSGs = new List<int>(); // a list of the received ack messages
+            while (windowsLeft > 0) 
+            {
+                for (int i = 1; segmentNum <= segmentAmount; i++)
+                {
+                    byte[] dataToSend;
+                    if (segmentNum < segmentAmount)
+                    {
+                        dataToSend = getSpecificBytes(lines, (segmentNum - 1) * (int)Params.SEGMENT_SIZE, segmentNum * (int)Params.SEGMENT_SIZE);
+                    } else
+                    {
+                        dataToSend = getSpecificBytes(lines, (segmentNum - 1) * (int)Params.SEGMENT_SIZE, lines.Length);
+                    }
+                    data = new DataMSG() { ConID = SessionID, From = Server, To = Client, Type = Messages.DATA, Data = dataToSend, More = segmentNum < segmentAmount, Size = lines.Length, Sequence = segmentNum-1 };
+                    msg = Encoding.ASCII.GetBytes(JsonSerializer.Serialize(data));
+                    socket.SendTo(msg, remoteEP);
+                    segmentNum++;
+                    dataMSGs.Add(data.Sequence);
+                }
+                try
+                {
+                    for (int i = 0; i < (int)Params.WINDOW_SIZE; i++)
+                    {
+                        b = socket.ReceiveFrom(buffer, buffer.Length, SocketFlags.None, ref remoteEP);
+                        response = Encoding.ASCII.GetString(buffer, 0, b);
+                        AckMSG receivedAck = JsonSerializer.Deserialize<AckMSG>(response);
+
+                        Console.WriteLine($"Received ack Nr {receivedAck.Sequence}");
+                        ackMSGs.Add(receivedAck.Sequence);
+
+                        C = new ConSettings() { Type = Messages.ACK, From = Client, To = Server, ConID = SessionID, Sequence = receivedAck.Sequence };
+
+                        if (ErrorHandler.VerifyAck(receivedAck, C) == ErrorType.BADREQUEST)
+                        {
+                            return ErrorHandler.VerifyAck(receivedAck, C);
+                        }
+                    }
+                } catch (SocketException e)
+                {
+                    Console.WriteLine("Timeout on ");
+                    segmentNum = dataMSGs.Except(ackMSGs).ToList().Min(); // Get the lost ack
+                    windowsLeft++;
+                }
+                windowsLeft--;
+            }
+
 
 
 

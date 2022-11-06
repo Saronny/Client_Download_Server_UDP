@@ -7,6 +7,7 @@ using UDP_FTP.Models;
 using UDP_FTP.Error_Handling;
 using static UDP_FTP.Models.Enums;
 using System.Text.Json.Nodes;
+using System.ComponentModel.DataAnnotations;
 
 namespace Client
 {
@@ -47,8 +48,8 @@ namespace Client
                 Console.WriteLine("Client started");
                 // TODO: Instantiate and initialize your socket... Done
                 sock = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-                sock.Bind(localEP);
-                sock.Connect(serverEndpoint);
+                //sock.Bind(localEP);
+                //sock.Connect(serverEndpoint);
 
 
                 // TODO: Send hello msg... Done
@@ -65,7 +66,7 @@ namespace Client
                 HelloMSG receivedHello = JsonSerializer.Deserialize<HelloMSG>(response);
                 var sessionId = receivedHello.ConID;
 
-                ConSettings helloCon = new ConSettings() { To = clientName, Type = Messages.HELLO };
+                ConSettings helloCon = new ConSettings() { To = clientName, Type = Messages.HELLO_REPLY };
                 if (ErrorHandler.VerifyGreeting(receivedHello, helloCon) == ErrorType.BADREQUEST)
                 {
                     throw new Exception("Bad request");
@@ -103,9 +104,51 @@ namespace Client
 
                 // TODO: Check if there are more DataMSG messages to be received 
                 // receive the message and verify if there are no errors
+                bool moreMessages = true;
+                string dataString = "";
+                int dataNumber = 0;
+
+                while (moreMessages == true)
+                {
+                    b = sock.ReceiveFrom(buffer, buffer.Length, SocketFlags.None, ref serverEP);
+                    response = Encoding.ASCII.GetString(buffer, 0, b);
+                    DataMSG receivedData = JsonSerializer.Deserialize<DataMSG>(response);
+
+                    
+
+                    moreMessages = receivedData.More;
+                    
+                    ConSettings dataCon = new ConSettings() { ConID = sessionId, From = serverName, To = clientName, Type = Messages.DATA, Sequence = dataNumber };
+
+                    if (ErrorHandler.VerifyData(receivedData, dataCon) == ErrorType.BADREQUEST)
+                    {
+                        throw new Exception("Bad request");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Received message {receivedData.Sequence} correctly");
+                    }
+
+
+
+                    dataNumber++;
+
+                    dataString += Encoding.ASCII.GetString(receivedData.Data);
+                    Console.WriteLine($"{receivedData.Sequence} | {Encoding.ASCII.GetString(receivedData.Data)}");
+
+
+                    ack = new AckMSG() { ConID = sessionId, From = clientName, To = serverName, Type = Messages.ACK, Sequence = dataNumber };
+                    msg = JsonSerializer.SerializeToUtf8Bytes(ack, typeof(AckMSG)); // Serialize and encode
+                    sock.SendTo(msg, serverEndpoint); // Send
+
+
+                }
+
+
+
+                
 
                 // TODO: Send back AckMSG for each received DataMSG 
-
 
                 // TODO: Receive close message
                 // receive the message and verify if there are no errors

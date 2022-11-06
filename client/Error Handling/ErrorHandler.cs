@@ -12,15 +12,23 @@ namespace UDP_FTP.Error_Handling
     {
         public static ErrorType VerifyGreeting( HelloMSG hello, ConSettings C)
         {
-            if ( hello.To != C.To || hello.Type != Messages.HELLO)
+            if ( hello.To != C.To || hello.Type != Messages.HELLO_REPLY)
                 return ErrorType.BADREQUEST;
             return ErrorType.NOERROR;
         }
         public static ErrorType VerifyRequest( RequestMSG req, ConSettings C)
         {
-            if (req.ConID != C.ConID || req.From != C.From || req.To != C.To || req.Type != Messages.REQUEST)
+            if (req.ConID != C.ConID || req.From != C.From || req.To != C.To || req.Type != Messages.REPLY)
                 return ErrorType.BADREQUEST;
             return ErrorType.NOERROR;
+        }
+        public static ErrorType VerifyData(DataMSG data, ConSettings C)
+        {
+            {
+                if (data.ConID != C.ConID || data.From != C.From || data.To != C.To || data.Type != Messages.DATA || data.Sequence != C.Sequence)
+                    return ErrorType.BADREQUEST;
+                return ErrorType.NOERROR;
+            }
         }
         public static ErrorType VerifyAck( AckMSG ack, ConSettings C)
         {
