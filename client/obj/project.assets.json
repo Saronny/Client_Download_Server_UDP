@@ -13,11 +13,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\miked\\OneDrive\\Bureaublad\\Analysis 5 - Assignment\\client\\Client.csproj",
+      "projectUniqueName": "C:\\Users\\miked\\Analysis 5 - Assignment\\Analysis_5\\Client\\Client.csproj",
       "projectName": "Client",
-      "projectPath": "C:\\Users\\miked\\OneDrive\\Bureaublad\\Analysis 5 - Assignment\\client\\Client.csproj",
+      "projectPath": "C:\\Users\\miked\\Analysis 5 - Assignment\\Analysis_5\\Client\\Client.csproj",
       "packagesPath": "C:\\Users\\miked\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\miked\\OneDrive\\Bureaublad\\Analysis 5 - Assignment\\client\\obj\\",
+      "outputPath": "C:\\Users\\miked\\Analysis 5 - Assignment\\Analysis_5\\Client\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\miked\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -51,7 +51,8 @@
           "net47",
           "net471",
           "net472",
-          "net48"
+          "net48",
+          "net481"
         ],
         "assetTargetFallback": true,
         "warn": true,
@@ -60,7 +61,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\6.0.301\\RuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\6.0.402\\RuntimeIdentifierGraph.json"
       }
     }
   }
