@@ -11,10 +11,10 @@ using static UDP_FTP.Models.Enums;
 
 namespace UDP_FTP.File_Handler
 {
-    
+
     class Communicate
     {
-        
+
         private const string Server = "MyServer";
         private string Client;
         private int SessionID;
@@ -64,7 +64,7 @@ namespace UDP_FTP.File_Handler
             // TODO: Instantiate and initialize different messages needed for the communication
             // required messages are: HelloMSG, RequestMSG, DataMSG, AckMSG, CloseMSG
             // Set attribute values for each class accordingly 
-        
+
             HelloMSG Greetback = new HelloMSG() { Type = Messages.HELLO_REPLY, From = "Server", To = "Client", ConID = SessionID }; // Server  -> Client
             HelloMSG Greet = new HelloMSG() { Type = Messages.HELLO, From = "Client", To = "Server", ConID = SessionID }; // Client -> Server
             RequestMSG req = new RequestMSG() { Type = Messages.REQUEST, From = "Client", To = "Server", ConID = SessionID, FileName = "test.txt", Status = ErrorType.NOERROR }; // Client -> Server
@@ -89,12 +89,14 @@ namespace UDP_FTP.File_Handler
                 Console.WriteLine("Hello message received");
                 Status = ErrorType.NOERROR;
             }
-            else {
+            else
+            {
                 Console.WriteLine("Hello message not received");
                 Status = ErrorType.CONNECTION_ERROR;
             }
             // TODO: If no error is found then HelloMSG will be sent back
-            if (Status == ErrorType.NOERROR){
+            if (Status == ErrorType.NOERROR)
+            {
                 socket.SendTo(Encoding.ASCII.GetBytes(JsonSerializer.Serialize(Greetback)), remoteEP);
             }
             else
@@ -110,7 +112,7 @@ namespace UDP_FTP.File_Handler
             msg = Encoding.ASCII.GetString(buffer, 0, b);
             Console.WriteLine("Client said {0}", msg);
             req = JsonSerializer.Deserialize<RequestMSG>(msg);
-            C = new ConSettings() { Type = Messages.REQUEST, To = "Server", From = "Client", ConID = SessionID }; 
+            C = new ConSettings() { Type = Messages.REQUEST, To = "Server", From = "Client", ConID = SessionID };
             if (VerifyRequest(req, C) == ErrorType.NOERROR)
             {
                 Console.WriteLine("Request message received");
@@ -141,9 +143,9 @@ namespace UDP_FTP.File_Handler
 
             // TODO:  Start sending file data by setting first the socket ReceiveTimeout value
             socket.ReceiveTimeout = 1000;
-            
 
-            
+
+
 
 
             // TODO: Open and read the text-file first
@@ -151,7 +153,7 @@ namespace UDP_FTP.File_Handler
 
             var file = Encoding.ASCII.GetBytes(File.ReadAllText(req2.FileName));
 
-            
+
 
 
             // TODO: Sliding window with go-back-n implementation
@@ -168,8 +170,8 @@ namespace UDP_FTP.File_Handler
 
             int send_base = 0;
             int nextseqnum = 0;
-            
-            int N = (int)Enums.Params.WINDOW_SIZE; 
+
+            int N = (int)Enums.Params.WINDOW_SIZE;
             int S = (int)Enums.Params.SEGMENT_SIZE;
 
 
@@ -178,81 +180,98 @@ namespace UDP_FTP.File_Handler
             int segments_sent = 0;
 
             byte[] data_buffer = new byte[S];
-            byte[] last_buffer = new byte[last_segment];
 
             bool Transmission = true;
-            while(Transmission) {
+            while (Transmission)
+            {
+                
                 //Sending a full window of data
                 if (nextseqnum < send_base + N)
                 {
-                    if(segments_sent == total_segments -1) {
-                        data = new DataMSG() { Type = Messages.DATA, From = "Server", To = "Client", ConID = SessionID, Sequence = segments_sent++, Data = last_buffer, More = false, Size = last_segment };
-
+                    //setting the data message
+                    data = new DataMSG() { };
+                    data.Type = Messages.DATA;
+                    data.ConID = SessionID;
+                    data.To = "Client";
+                    data.From = "Server";
+                    data.Sequence = segments_sent++;
+                    if (segments_sent == total_segments)
+                    {
+                        data.More = false;
+                        data.Size = last_segment;
+                        data_buffer = new byte[last_segment];
                     }
-                    else {
-                        data = new DataMSG() { Type = Messages.DATA, From = "Server", To = "Client", ConID = SessionID, Sequence = segments_sent++, Data = data_buffer, More = true, Size = S };
+                    else
+                    {
+                        data.More = true;
+                        data.Size = S;
                     }
-                    for(int i = 0; i < data.Data.Length; i++) {
-                        data.Data[i] = file[i + (segments_sent * S)];
+                    for(int i = 0; i < data.Size; i++) {
+                        data_buffer[i] = file[i + (nextseqnum * S)];
                     }
-                    msg = JsonSerializer.Serialize(data);
-                    socket.SendTo(Encoding.ASCII.GetBytes(msg), remoteEP);
-                    nextseqnum++;
-
+                    data.Data = data_buffer;
                 }
+                //sending the data message
+                msg = JsonSerializer.Serialize(data);
+                socket.SendTo(Encoding.ASCII.GetBytes(msg), remoteEP);
+                nextseqnum++;
+
+            }
             // TODO: Receive and verify the acknowledgements (AckMSG) of sent messages
             // Your client implementation should send an AckMSG message for each received DataMSG message  
-                for (int i = 0; i < N; i++) {
-                    try
+            for (int i = 0; i < N; i++)
+            {
+                try
+                {
+                    b = socket.ReceiveFrom(buffer, ref remoteEP);
+                    msg = Encoding.ASCII.GetString(buffer, 0, b);
+                    Console.WriteLine("Client said {0}", msg);
+                    ack = JsonSerializer.Deserialize<AckMSG>(msg);
+                    C = new ConSettings() { Type = Messages.ACK, To = "Server", From = "Client", ConID = SessionID };
+                    if (VerifyAck(ack, C) == ErrorType.NOERROR)
                     {
-                        b = socket.ReceiveFrom(buffer, ref remoteEP);
-                        msg = Encoding.ASCII.GetString(buffer, 0, b);
-                        Console.WriteLine("Client said {0}", msg);
-                        ack = JsonSerializer.Deserialize<AckMSG>(msg);
-                        C = new ConSettings() { Type = Messages.ACK, To = "Server", From = "Client", ConID = SessionID };
-                        if (VerifyAck(ack, C) == ErrorType.NOERROR)
-                        {
-                            Console.WriteLine("Ack message received");
-                            Status = ErrorType.NOERROR;
-                        }
-                        else
-                        {
-                            Console.WriteLine("Error in Ack Message");
-                            Status = ErrorType.BADREQUEST;
-                        }
-                        if (Status == ErrorType.NOERROR)
-                        {
-                            send_base = ack.Sequence + 1;
-                        }
-                        else
-                        {
-                            Console.WriteLine("Error in Ack Message");
-                        }
+                        Console.WriteLine("Ack message received");
+                        Status = ErrorType.NOERROR;
                     }
-                    catch (SocketException e)
+                    else
                     {
-                        Console.WriteLine("Timeout");
+                        Console.WriteLine("Error in Ack Message");
+                        Status = ErrorType.BADREQUEST;
+                    }
+                    if (Status == ErrorType.NOERROR)
+                    {
+                        send_base = ack.Sequence + 1;
+                    }
+                    else
+                    {
+                        Console.WriteLine("Error in Ack Message");
                     }
                 }
+                catch (SocketException e)
+                {
+                    Console.WriteLine("Timeout");
+
+                }
             }
-
-            
-
-
-
-             
+        
 
 
 
 
-            // TODO: Print each confirmed sequence in the console
-            // receive the message and verify if there are no errors
 
 
-            // TODO: Send a CloseMSG message to the client for the current session
-            // Send close connection request
-            cls = new CloseMSG() { Type = Messages.CLOSE_REQUEST, From = "Server", To = "Client", ConID = SessionID };
-            msg = JsonSerializer.Serialize(cls);
+
+
+
+
+        // TODO: Print each confirmed sequence in the console
+        // receive the message and verify if there are no errors
+
+
+        // TODO: Send a CloseMSG message to the client for the current session
+        // Send close connection request
+        cls = new CloseMSG() { Type = Messages.CLOSE_REQUEST, From = "Server", To = "Client", ConID = SessionID };
+        msg = JsonSerializer.Serialize(cls);
             socket.SendTo(Encoding.ASCII.GetBytes(msg), remoteEP);
 
             // TODO: Receive and verify a CloseMSG message confirmation for the current session
@@ -273,10 +292,12 @@ namespace UDP_FTP.File_Handler
                 Status = ErrorType.BADREQUEST;
             }
 
-            string student_1 = "Mike Dudok 1026366";
-            string student_2 = "Timo van der Ven 1024454";
-            Console.WriteLine("Group members: {0} | {1}", student_1, student_2);
-            return ErrorType.NOERROR;
+string student_1 = "Mike Dudok 1026366";
+string student_2 = "Timo van der Ven 1024454";
+Console.WriteLine("Group members: {0} | {1}", student_1, student_2);
+return ErrorType.NOERROR;
         }
     }
 }
+
+
